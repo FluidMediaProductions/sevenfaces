@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sevenfaces
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: web-pv-claim
+  namespace: sevenfaces
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: server
+  namespace: sevenfaces
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      volumes:
+      - name: web-data
+        persistentVolumeClaim:
+          claimName: web-pv-claim
+      containers:
+      - name: server
+        image: nginx
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 80
+            protocol: TCP
+        volumeMounts:
+        - name: web-data
+          mountPath: /usr/share/nginx/html
+          readOnly: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: sevenfaces
+  name: server
+  labels:
+    app: server
+spec:
+  selector:
+    app: server
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: server
+  namespace: sevenfaces
+  labels:
+    app: server
+  annotations:
+    kubernetes.io/tls-acme: "true"
+spec:
+  tls:
+  - hosts:
+    - "sevenfaces.co.uk"
+    secretName: server-tls
+  rules:
+  - host: "sevenfaces.co.uk"
+    http:
+      paths:
+      - path: "/"
+        backend:
+          serviceName: server
+          servicePort: 80
