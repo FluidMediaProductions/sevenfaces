@@ -71,9 +71,17 @@ spec:
   tls:
   - hosts:
     - "sevenfaces.co.uk"
+    - "www.sevenfaces.co.uk"
     secretName: server-tls
   rules:
   - host: "sevenfaces.co.uk"
+    http:
+      paths:
+      - path: "/"
+        backend:
+          serviceName: server
+          servicePort: 80
+  - host: "www.sevenfaces.co.uk"
     http:
       paths:
       - path: "/"
